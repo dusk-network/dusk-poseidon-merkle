@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Error","Possible error states for the hashing."]],"struct":[["PoseidonMerkle","The `PoseidonMerkle` structure will accept a number of inputs equal to the arity."],["Scalar","The `Scalar` struct holds an integer \\(s < 2^{255} \\) which represents an element of \\(\\mathbb Z / \\ell\\)."]]});
