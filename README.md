@@ -1,5 +1,6 @@
 # Poseidon Merkle Tree
 
+[![Build Status](https://travis-ci.com/dusk-network/dusk-poseidon-merkle.svg?branch=master)](https://travis-ci.com/dusk-network/dusk-poseidon-merkle)
 [![Repository](https://dusk-network.github.io/dusk-poseidon-merkle/repo-badge.svg)](https://github.com/dusk-network/dusk-poseidon-merkle)
 [![Documentation](https://dusk-network.github.io/dusk-poseidon-merkle/badge.svg)](https://dusk-network.github.io/dusk-poseidon-merkle/dusk_poseidon_merkle/index.html)
 
