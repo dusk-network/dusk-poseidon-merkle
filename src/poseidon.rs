@@ -1,5 +1,6 @@
 use crate::{
-    Error, Scalar, FULL_ROUNDS, MDS_MATRIX, MERKLE_ARITY, PARTIAL_ROUNDS, ROUND_CONSTANTS, WIDTH,
+    Error, PoseidonLeaf, Scalar, FULL_ROUNDS, MDS_MATRIX, MERKLE_ARITY, PARTIAL_ROUNDS,
+    ROUND_CONSTANTS, WIDTH,
 };
 use std::ops;
 
@@ -8,20 +9,14 @@ use std::ops;
 /// The leaves must implement [`ops::Mul`] against a [`Scalar`], because the MDS matrix and the
 /// round constants are set, by default, as scalars.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Poseidon<T>
-where
-    T: Copy + From<u64> + From<Scalar> + PartialEq + ops::MulAssign + ops::AddAssign,
-{
+pub struct Poseidon<T: PoseidonLeaf> {
     constants_offset: usize,
     present_elements: u64,
     pos: usize,
     leaves: [T; WIDTH],
 }
 
-impl<T> Default for Poseidon<T>
-where
-    T: Copy + From<u64> + From<Scalar> + PartialEq + ops::MulAssign + ops::AddAssign,
-{
+impl<T: PoseidonLeaf> Default for Poseidon<T> {
     fn default() -> Self {
         Poseidon {
             present_elements: 0u64,
@@ -32,10 +27,7 @@ where
     }
 }
 
-impl<T> Poseidon<T>
-where
-    T: Copy + From<u64> + From<Scalar> + PartialEq + ops::MulAssign + ops::AddAssign,
-{
+impl<T: PoseidonLeaf> Poseidon<T> {
     /// The poseidon width will be defined by `arity + 1`, because the first element will be a set of bitflags defining which element is present or absent. The absent elements will be represented by `0`, and the present ones by `1`, considering inverse order.
     ///
     /// For example: given we have an arity of `8`, and  if we have two present elements, three absent, and three present, we will have the first element as `0xe3`, or `(11100011)`.

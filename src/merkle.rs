@@ -1,13 +1,20 @@
-use crate::{Poseidon, Scalar, MERKLE_ARITY, MERKLE_WIDTH};
+use crate::{Poseidon, PoseidonLeaf, Scalar, MERKLE_ARITY, MERKLE_WIDTH};
+use std::ops;
 
 /// The merkle tree will accept up to `MERKLE_ARITY * MERKLE_WIDTH` leaves.
 #[derive(Copy, Clone)]
-pub struct MerkleTree {
-    root: Option<Scalar>,
-    leaves: [Option<Scalar>; MERKLE_WIDTH],
+pub struct MerkleTree<T>
+where
+    T: PoseidonLeaf,
+{
+    root: Option<T>,
+    leaves: [Option<T>; MERKLE_WIDTH],
 }
 
-impl Default for MerkleTree {
+impl<T> Default for MerkleTree<T>
+where
+    T: PoseidonLeaf,
+{
     fn default() -> Self {
         MerkleTree {
             root: None,
@@ -16,13 +23,16 @@ impl Default for MerkleTree {
     }
 }
 
-impl MerkleTree {
+impl<T> MerkleTree<T>
+where
+    T: PoseidonLeaf,
+{
     /// Insert the provided leaf in the defined position.
     ///
     /// # Panics
     ///
     /// Panics if `index` is out of bounds.
-    pub fn insert_unchecked(&mut self, index: usize, leaf: Scalar) {
+    pub fn insert_unchecked(&mut self, index: usize, leaf: T) {
         self.root = None;
         self.leaves[index].replace(leaf);
     }
@@ -32,18 +42,21 @@ impl MerkleTree {
     /// # Panics
     ///
     /// Panics if `index` is out of bounds.
-    pub fn remove_unchecked(&mut self, index: usize) -> Option<Scalar> {
+    pub fn remove_unchecked(&mut self, index: usize) -> Option<T> {
         self.root = None;
         self.leaves[index].take()
     }
 
     /// Calculate and return the root of the merkle tree.
-    pub fn root(&mut self) -> Scalar {
+    pub fn root(&mut self) -> T
+    where
+        Scalar: ops::Mul<T, Output = T>,
+    {
         if let Some(s) = self.root {
             return s;
         }
 
-        let mut leaves: [Option<Scalar>; MERKLE_WIDTH] = [None; MERKLE_WIDTH];
+        let mut leaves: [Option<T>; MERKLE_WIDTH] = [None; MERKLE_WIDTH];
         leaves.copy_from_slice(&self.leaves);
 
         let mut merkle = MERKLE_WIDTH;

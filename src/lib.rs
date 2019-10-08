@@ -7,6 +7,7 @@ pub use curve25519_dalek::scalar::Scalar;
 pub use error::Error;
 use lazy_static::*;
 pub use merkle::MerkleTree;
+use std::ops;
 
 mod error;
 mod merkle;
@@ -35,6 +36,13 @@ lazy_static! {
         unsafe { std::ptr::read(bytes.as_ptr() as *const _) }
     };
 }
+
+/// The items for the [`MerkleTree`] and [`Poseidon`] must implement this trait
+pub trait PoseidonLeaf:
+    Copy + From<u64> + From<Scalar> + PartialEq + ops::MulAssign + ops::AddAssign
+{
+}
+impl PoseidonLeaf for Scalar {}
 
 #[cfg(test)]
 mod tests {
