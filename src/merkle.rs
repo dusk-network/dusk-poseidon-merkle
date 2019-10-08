@@ -3,18 +3,12 @@ use std::ops;
 
 /// The merkle tree will accept up to `MERKLE_ARITY * MERKLE_WIDTH` leaves.
 #[derive(Copy, Clone)]
-pub struct MerkleTree<T>
-where
-    T: PoseidonLeaf,
-{
+pub struct MerkleTree<T: PoseidonLeaf> {
     root: Option<T>,
     leaves: [Option<T>; MERKLE_WIDTH],
 }
 
-impl<T> Default for MerkleTree<T>
-where
-    T: PoseidonLeaf,
-{
+impl<T: PoseidonLeaf> Default for MerkleTree<T> {
     fn default() -> Self {
         MerkleTree {
             root: None,
@@ -23,10 +17,7 @@ where
     }
 }
 
-impl<T> MerkleTree<T>
-where
-    T: PoseidonLeaf,
-{
+impl<T: PoseidonLeaf> MerkleTree<T> {
     /// Insert the provided leaf in the defined position.
     ///
     /// # Panics
