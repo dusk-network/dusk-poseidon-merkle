@@ -52,7 +52,7 @@ impl<T: PoseidonLeaf> Poseidon<T> {
     /// # Panics
     ///
     /// Panics if `index` is out of bounds.
-    fn insert_unchecked(&mut self, index: usize, leaf: T) {
+    pub(crate) fn insert_unchecked(&mut self, index: usize, leaf: T) {
         let mut mask = 1u64;
         mask <<= index;
         self.present_elements |= mask;
