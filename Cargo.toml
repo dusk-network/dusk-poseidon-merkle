@@ -7,3 +7,11 @@ edition = "2018"
 [dependencies]
 curve25519-dalek = "1.2.3"
 lazy_static = "1.4.0"
+
+[dev-dependencies]
+criterion = "0.3"
+rand = "0.7.0"
+
+[[bench]]
+name = "merkle"
+harness = false

@@ -22,6 +22,11 @@ impl<T: PoseidonLeaf> Default for MerkleTree<T> {
 }
 
 impl<T: PoseidonLeaf> MerkleTree<T> {
+    /// Return a reference to the provided leaves
+    pub fn leaves(&self) -> &[Option<T>; MERKLE_WIDTH] {
+        &self.leaves
+    }
+
     /// Insert the provided leaf in the defined position.
     ///
     /// # Panics
@@ -104,7 +109,7 @@ impl<T: PoseidonLeaf> MerkleTree<T> {
         let mut merkle = MERKLE_WIDTH;
         let mut h = Poseidon::default();
 
-        for raw_index in 1..MERKLE_ARITY {
+        for raw_index in 1..MERKLE_HEIGHT {
             for i in (0..merkle).step_by(MERKLE_ARITY) {
                 let from = i;
                 let to = i + MERKLE_ARITY;
