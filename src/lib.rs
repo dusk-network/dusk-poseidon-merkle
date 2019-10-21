@@ -25,7 +25,7 @@ pub(crate) const PARTIAL_ROUNDS: usize = 59;
 pub const MERKLE_ARITY: usize = 4;
 /// Width of the merkle tree
 pub const MERKLE_WIDTH: usize = 64;
-pub(crate) const MERKLE_HEIGHT: usize = 4;
+pub(crate) const MERKLE_HEIGHT: usize = 3;
 
 lazy_static! {
     static ref ROUND_CONSTANTS: [Scalar; 960] = {
@@ -59,7 +59,7 @@ mod tests {
         assert!(MERKLE_ARITY > 1);
 
         // Sanity check for the height
-        assert!(MERKLE_HEIGHT > 2);
+        assert!(MERKLE_HEIGHT > 1);
 
         // Enforce a relation between the provided MDS matrix and the arity of the merkle tree
         assert_eq!(WIDTH, MERKLE_ARITY + 1);
@@ -69,7 +69,7 @@ mod tests {
 
         // Grant the defined arity is consistent with the defined width
         assert_eq!(
-            MERKLE_ARITY.pow(std::cmp::max(2, MERKLE_HEIGHT as u32 - 1)),
+            MERKLE_ARITY.pow(std::cmp::max(2, MERKLE_HEIGHT as u32)),
             MERKLE_WIDTH
         );
     }

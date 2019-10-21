@@ -8,13 +8,13 @@ use std::ops;
 pub struct MerkleTree<T: PoseidonLeaf> {
     root: Option<T>,
     leaves: [Option<T>; MERKLE_WIDTH],
-    raw: [[Option<T>; MERKLE_WIDTH]; MERKLE_HEIGHT],
+    raw: [[Option<T>; MERKLE_WIDTH]; MERKLE_HEIGHT + 1],
 }
 
 impl<T: PoseidonLeaf> Default for MerkleTree<T> {
     fn default() -> Self {
         MerkleTree {
-            raw: [[None; MERKLE_WIDTH]; MERKLE_HEIGHT],
+            raw: [[None; MERKLE_WIDTH]; MERKLE_HEIGHT + 1],
             root: None,
             leaves: [None; MERKLE_WIDTH],
         }
@@ -80,7 +80,7 @@ impl<T: PoseidonLeaf> MerkleTree<T> {
         self.root();
         let mut proof = Proof::default();
 
-        for row in 0..MERKLE_HEIGHT - 1 {
+        for row in 0..MERKLE_HEIGHT {
             let from = MERKLE_ARITY * (needle / MERKLE_ARITY);
             let to = from + MERKLE_ARITY;
             let idx = needle % MERKLE_ARITY;
@@ -109,7 +109,7 @@ impl<T: PoseidonLeaf> MerkleTree<T> {
         let mut merkle = MERKLE_WIDTH;
         let mut h = Poseidon::default();
 
-        for raw_index in 1..MERKLE_HEIGHT {
+        for raw_index in 1..MERKLE_HEIGHT + 1 {
             for i in (0..merkle).step_by(MERKLE_ARITY) {
                 let from = i;
                 let to = i + MERKLE_ARITY;
@@ -122,7 +122,7 @@ impl<T: PoseidonLeaf> MerkleTree<T> {
             merkle /= MERKLE_ARITY;
         }
 
-        self.root = self.raw[MERKLE_HEIGHT - 1][0];
+        self.root = self.raw[MERKLE_HEIGHT][0];
         match self.root {
             Some(s) => s,
             None => unreachable!(),
@@ -194,7 +194,7 @@ mod tests {
             .take(MERKLE_ARITY)
             .collect();
 
-        for _ in 0..MERKLE_HEIGHT - 2 {
+        for _ in 0..MERKLE_HEIGHT - 1 {
             h.replace(void.as_slice());
             round_void = h.hash();
 

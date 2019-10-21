@@ -5,14 +5,14 @@ use std::ops;
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Proof<T: PoseidonLeaf> {
     pos: usize,
-    data: [(usize, [Option<T>; MERKLE_ARITY]); MERKLE_HEIGHT - 1],
+    data: [(usize, [Option<T>; MERKLE_ARITY]); MERKLE_HEIGHT],
 }
 
 impl<T: PoseidonLeaf> Default for Proof<T> {
     fn default() -> Self {
         Proof {
             pos: 0,
-            data: [(0, [None; MERKLE_ARITY]); MERKLE_HEIGHT - 1],
+            data: [(0, [None; MERKLE_ARITY]); MERKLE_HEIGHT],
         }
     }
 }
@@ -28,7 +28,7 @@ impl<T: PoseidonLeaf> Proof<T> {
     }
 
     /// Return the raw proof data
-    pub fn data(&self) -> &[(usize, [Option<T>; MERKLE_ARITY]); MERKLE_HEIGHT - 1] {
+    pub fn data(&self) -> &[(usize, [Option<T>; MERKLE_ARITY]); MERKLE_HEIGHT] {
         &self.data
     }
 
