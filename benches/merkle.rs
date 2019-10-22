@@ -3,6 +3,7 @@ use dusk_poseidon_merkle::*;
 use rand::rngs::OsRng;
 use rand::seq::SliceRandom;
 use rand::RngCore;
+use std::env;
 use std::time::Duration;
 
 fn bench_merkle_proof_verify(c: &mut Criterion) {
@@ -26,7 +27,11 @@ fn bench_merkle_proof_verify(c: &mut Criterion) {
 
 criterion_group! {
     name = merkle;
-    config = Criterion::default().sample_size(40).measurement_time(Duration::from_secs(60));
+    config = Criterion::default().sample_size(env::var("POSEIDON_BENCH_SAMPLE_SIZE")
+        .map(|s| s.parse().expect("Failed to parse POSEIDON_BENCH_SAMPLE_SIZE"))
+        .unwrap_or(40)).measurement_time(Duration::from_secs(env::var("POSEIDON_BENCH_MEASUREMENT_TIME")
+        .map(|s| s.parse().expect("Failed to parse POSEIDON_BENCH_MEASUREMENT_TIME"))
+        .unwrap_or(60)));
     targets = bench_merkle_proof_verify
 }
 criterion_main!(merkle);

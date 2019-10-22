@@ -1,9 +1,6 @@
 RS_FILES := $(shell find . -name '*.rs')
-.PHONY: all assets dep lintdep lint fmt inttest test clean build release bench publishdoc
+.PHONY: all dep lintdep lint fmt inttest test clean build release bench publishdoc
 all: test inttest build release ## Main sequence
-assets: ## Generate the poseidon assets
-	@cargo +nightly build && \
-		./target/debug/generate_mds > assets/mds.bin
 dep: ## Install the dependencies
 	@rustup toolchain install beta
 	@rustup toolchain install nightly
