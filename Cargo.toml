@@ -5,17 +5,39 @@ authors = ["Victor Lopez <victor@dusk.network>"]
 edition = "2018"
 build = "build.rs"
 
+[features]
+big-merkle = ["rocksdb", "bincode", "serde", "tempdir"]
+
 [dependencies]
-curve25519-dalek = "1.2.3"
 lazy_static = "1.4.0"
+rocksdb = { version = "0.12", optional = true }
+bincode = { version = "1.2", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+tempdir = { version = "0.3", optional = true }
+
+[dependencies.curve25519-dalek]
+branch = "feature/compressed-try-from"
+git = "https://github.com/dusk-network/curve25519-dalek.git"
+features = ["serde"]
 
 [dev-dependencies]
 criterion = "0.3"
 rand = "0.7.0"
+sha2 = "0.8"
 
-[build-dependencies]
-curve25519-dalek = "1.2.3"
+[build-dependencies.curve25519-dalek]
+branch = "feature/compressed-try-from"
+git = "https://github.com/dusk-network/curve25519-dalek.git"
+
+[[bench]]
+name = "hash"
+harness = false
 
 [[bench]]
 name = "merkle"
 harness = false
+
+[[bench]]
+name = "big_merkle"
+harness = false
+required-features = ["big-merkle"]

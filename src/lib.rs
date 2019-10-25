@@ -2,18 +2,28 @@
 #![deny(missing_docs)]
 #![doc(include = "../README.md")]
 
+use std::ops;
+
+use lazy_static::*;
+#[cfg(feature = "big-merkle")]
+use serde::{Deserialize, Serialize};
+
 pub use crate::poseidon::Poseidon;
 pub use curve25519_dalek::scalar::Scalar;
 pub use error::Error;
-use lazy_static::*;
 pub use merkle::MerkleTree;
 pub use proof::Proof;
-use std::ops;
+
+#[cfg(feature = "big-merkle")]
+pub use big_merkle::{BigMerkleTree, BigProof, MerkleCoord, MerkleRange};
 
 mod error;
 mod merkle;
 mod poseidon;
 mod proof;
+
+#[cfg(feature = "big-merkle")]
+mod big_merkle;
 
 include!("constants.rs");
 
@@ -30,10 +40,29 @@ lazy_static! {
 }
 
 /// The items for the [`MerkleTree`] and [`Poseidon`] must implement this trait
+///
+/// The implementation must be serializable for the [`BigMerkleTree`] storage
+#[cfg(feature = "big-merkle")]
 pub trait PoseidonLeaf:
-    Copy + From<u64> + From<Scalar> + PartialEq + ops::MulAssign + ops::AddAssign + Send + Sync
+    Copy
+    + From<u64>
+    + From<Scalar>
+    + From<[u8; 32]>
+    + PartialEq
+    + ops::MulAssign
+    + ops::AddAssign
+    + Serialize
+    + for<'d> Deserialize<'d>
 {
 }
+
+/// The items for the [`MerkleTree`] and [`Poseidon`] must implement this trait
+#[cfg(not(feature = "big-merkle"))]
+pub trait PoseidonLeaf:
+    Copy + From<u64> + From<Scalar> + PartialEq + ops::MulAssign + ops::AddAssign
+{
+}
+
 impl PoseidonLeaf for Scalar {}
 
 #[cfg(test)]

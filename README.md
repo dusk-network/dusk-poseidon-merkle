@@ -29,29 +29,6 @@ A few environment variables will be read in the build process.
 
     Represents the number of partial rounds performed during the permutation. Defaults to `59`.
 
-## Benchmark
-
-The used framework is criterion.
-
-A few environment variables will be read in the bench process.
-
-* `POSEIDON_BENCH_SAMPLE_SIZE`
-
-    Check the documentation for `sample_size` in `Criterion`. Defaults to `40`.
-
-* `POSEIDON_BENCH_MEASUREMENT_TIME`
-
-    Check the documentation for `measurement_time` in `Criterion`. Defaults to `60`.
-
-To benchmark with an arity of 2 and width of 256, you should:
-
-```bash
-$ POSEIDON_BENCH_MEASUREMENT_TIME=100 \
-    POSEIDON_MERKLE_ARITY=2 \
-    POSEIDON_MERKLE_WIDTH=256 \
-    cargo bench
-```
-
 ## Example
 
 ```rust

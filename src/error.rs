@@ -1,6 +1,6 @@
 use std::{error, fmt};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 /// Possible error states for the hashing.
 pub enum Error {
     /// The allowed number of leaves cannot be greater than the arity of the tree.
@@ -9,6 +9,8 @@ pub enum Error {
     IndexOutOfBounds,
     /// The provided leaf was not found in the tree
     LeafNotFound,
+    /// Other errors
+    Other(String),
 }
 
 impl error::Error for Error {}
@@ -22,6 +24,7 @@ impl fmt::Display for Error {
             ),
             Error::IndexOutOfBounds => write!(f, "The referenced index is outs of bounds."),
             Error::LeafNotFound => write!(f, "The provided leaf is not present in the tree."),
+            Error::Other(s) => write!(f, "{}", s),
         }
     }
 }
