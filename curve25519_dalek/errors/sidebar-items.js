@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["CurveError","Errors which may occur."]]});

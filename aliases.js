@@ -7,5 +7,6 @@ ALIASES["dusk_poseidon_merkle"] = {};
 ALIASES["generic_array"] = {};
 ALIASES["lazy_static"] = {};
 ALIASES["rand_core"] = {};
+ALIASES["serde"] = {};
 ALIASES["subtle"] = {};
 ALIASES["typenum"] = {};
