@@ -23,8 +23,13 @@ build: ## Build with debug symbols
 	@cargo +nightly build
 release: ## Build with optimization and without debug symbols
 	@cargo +nightly build --release
-bench: ## Perform the benchmark tests
-	@cargo +nightly bench
+bench: dep ## Perform the benchmark tests
+	@for a in 2 4 8 ; \
+		do export POSEIDON_MERKLE_ARITY=$$a ; \
+		export POSEIDON_MERKLE_WIDTH=64 ; \
+		echo "POSEIDON_MERKLE_ARITY" $$POSEIDON_MERKLE_ARITY "POSEIDON_MERKLE_WIDTH" $$POSEIDON_MERKLE_WIDTH ; \
+		cargo +nightly bench ; \
+		done
 publishdoc: ## Generate and publish git pages docs
 	@cargo +nightly doc && \
 		echo "<meta http-equiv=refresh content=0;url=/dusk-poseidon-merkle/dusk_poseidon_merkle/index.html>" > target/doc/index.html && \
