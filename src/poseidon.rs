@@ -266,28 +266,6 @@ mod tests {
     }
 
     #[test]
-    fn hash() {
-        let mut h = Poseidon::default();
-
-        for _ in 0..MERKLE_ARITY {
-            h.push(Scalar::one()).unwrap();
-        }
-
-        let result = h.hash();
-
-        // Very likely to break if Poseidon parameters changes
-        //
-        // If you need to update this part, then you need to increment the major version of the lib
-        let expected = vec![
-            0x15, 0xf4, 0x2e, 0x34, 0xae, 0x8f, 0x31, 0x2e, 0xb8, 0xa3, 0x3b, 0x28, 0x30, 0xd1,
-            0x94, 0x8d, 0xcf, 0x06, 0xd3, 0xa2, 0xeb, 0x65, 0xef, 0xf8, 0x65, 0x2e, 0x78, 0x08,
-            0xcf, 0xc0, 0xff, 0x03,
-        ];
-
-        assert_eq!(expected.as_slice(), result.as_bytes());
-    }
-
-    #[test]
     fn hash_det() {
         let mut h = Poseidon::default();
         h.push(Scalar::one()).unwrap();

@@ -1,18 +1,28 @@
 use crate::{Poseidon, PoseidonLeaf, Scalar, MERKLE_ARITY, MERKLE_HEIGHT};
 use std::ops;
 
-/// Set of [`ProofElement`] defining a path to the root of the tree.
+/// Set of pairs (idx, Hash) to reconstruct the merkle root.
+/// For every level of the tree,
+/// Required information to reconstruct the merkle root.
+///
+/// For every level of the tree, there is an index, and a slice of leaves.
+///
+/// The index will be the position in which the previously calculated information should be
+/// inserted.
+///
+/// The leaves will define the other elements required to perform the hash for that level of the
+/// tree.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Proof<T: PoseidonLeaf> {
     pos: usize,
-    data: [(usize, [Option<T>; MERKLE_ARITY]); MERKLE_HEIGHT - 1],
+    data: [(usize, [Option<T>; MERKLE_ARITY]); MERKLE_HEIGHT],
 }
 
 impl<T: PoseidonLeaf> Default for Proof<T> {
     fn default() -> Self {
         Proof {
             pos: 0,
-            data: [(0, [None; MERKLE_ARITY]); MERKLE_HEIGHT - 1],
+            data: [(0, [None; MERKLE_ARITY]); MERKLE_HEIGHT],
         }
     }
 }
@@ -28,7 +38,7 @@ impl<T: PoseidonLeaf> Proof<T> {
     }
 
     /// Return the raw proof data
-    pub fn data(&self) -> &[(usize, [Option<T>; MERKLE_ARITY]); MERKLE_HEIGHT - 1] {
+    pub fn data(&self) -> &[(usize, [Option<T>; MERKLE_ARITY]); MERKLE_HEIGHT] {
         &self.data
     }
 

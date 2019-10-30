@@ -6,27 +6,28 @@
 
 Reference implementation for the Poseidon Merkle function.
 
-Given we have an arbitrary arity of `4 -> 1`, let the following parameters be defined:
-```rust
-const MERKLE_ARITY: usize = 4;
-const WIDTH: usize = MERKLE_ARITY + 1;
-const FULL_ROUNDS: usize = 8;
-const PARTIAL_ROUNDS: usize = 59;
-```
-
 The `Poseidon` structure will accept a number of inputs equal to the arity of the tree.
 
-## Guidelines
+## Build
 
-#### MDS matrix
+A few environment variables will be read in the build process.
 
-If you change any of the constants, the unit tests will break and you need to generate a new MDS matrix.
+* `POSEIDON_MERKLE_ARITY`
 
-Also, if you do that, you need to increment the major version of the library.
+    Represents the arity of the merkle tree. This is also the maximum number of elements the poseidon hash will accept. Defaults to `4`.
 
-```bash
-$ make assets
-```
+
+* `POSEIDON_MERKLE_WIDTH`
+
+    Represents the merkle tree width. Defaults to `64`.
+
+* `POSEIDON_FULL_ROUNDS`
+
+    Represents the number of full rounds performed during the permutation. Defaults to `8`.
+
+* `POSEIDON_PARTIAL_ROUNDS`
+
+    Represents the number of partial rounds performed during the permutation. Defaults to `59`.
 
 ## Example
 
