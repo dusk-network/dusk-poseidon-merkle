@@ -1,5 +1,6 @@
-use crate::Error;
+use crate::{Error, MERKLE_ARITY};
 
+use std::cmp;
 use std::convert::{TryFrom, TryInto};
 
 use rocksdb::DB;
@@ -46,6 +47,16 @@ impl MerkleCoord {
 
         db.put(coord.as_slice(), leaf.as_slice())
             .map_err(|e| Error::Other(e.to_string()))
+    }
+
+    /// Descend the tree for a number of provided levels
+    pub fn descend(&mut self, levels: usize) {
+        let levels = cmp::min(self.height, levels);
+
+        if levels > 0 {
+            self.height -= levels;
+            self.idx /= MERKLE_ARITY.pow(levels as u32);
+        }
     }
 }
 

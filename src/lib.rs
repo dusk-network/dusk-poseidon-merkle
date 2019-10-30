@@ -53,6 +53,8 @@ pub trait PoseidonLeaf:
     + ops::AddAssign
     + Serialize
     + for<'d> Deserialize<'d>
+    + Send
+    + Sync
 {
 }
 

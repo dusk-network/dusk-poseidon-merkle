@@ -1,72 +1,87 @@
 use crate::{Error, Poseidon, PoseidonLeaf, Scalar, MERKLE_ARITY};
 
+use std::cmp;
 use std::convert::TryInto;
-use std::marker::PhantomData;
 use std::ops;
 use std::path::Path;
+use std::sync::{mpsc, Arc, Mutex};
+use std::thread;
 
-use rocksdb::{Options, DB};
+use rocksdb::DB;
+#[cfg(test)]
 use tempdir::TempDir;
 
 pub use merkle_coord::MerkleCoord;
 pub use merkle_range::MerkleRange;
 pub use proof::BigProof;
 
+const CACHE_HEIGHT_INTERVAL: usize = 2;
+
 mod merkle_coord;
 mod merkle_range;
 mod proof;
 
-fn create_cache() -> Result<DB, Error> {
-    let cache = TempDir::new("bigmerkle")
-        .map(|t| t.into_path())
-        .map_err(|e| Error::Other(e.to_string()))?;
-
-    DB::open_default(cache).map_err(|e| Error::Other(e.to_string()))
-}
-
 /// The merkle tree will accept up to `MERKLE_ARITY * MERKLE_WIDTH` leaves.
 #[derive(Debug)]
-pub struct BigMerkleTree<'a, T: PoseidonLeaf> {
-    modified: bool,
+pub struct BigMerkleTree {
     width: usize,
     height: usize,
+    max_idx: usize,
     /// For most cases, this attribute should hold one element that represents the higher idx to
     /// the end of the tree. The usage of the free intervals is, however, non-restricted.
     empty_intervals: Vec<MerkleRange>,
-    db: DB,
-    cache: DB,
-    phantom: PhantomData<&'a T>,
+    db: Arc<DB>,
+    cache: Arc<DB>,
 }
 
-impl<'a, T: PoseidonLeaf> BigMerkleTree<'a, T> {
+impl Clone for BigMerkleTree {
+    fn clone(&self) -> Self {
+        BigMerkleTree {
+            max_idx: self.max_idx,
+            db: Arc::clone(&self.db),
+            cache: Arc::clone(&self.cache),
+            empty_intervals: self.empty_intervals.clone(),
+            width: self.width,
+            height: self.height,
+        }
+    }
+}
+
+impl BigMerkleTree {
     /// `BigMerkleTree` constructor
-    pub fn new<D: AsRef<Path>>(db_path: D, width: usize) -> Result<Self, Error> {
-        let modified = false;
+    pub fn new<D: AsRef<Path>, E: AsRef<Path>>(
+        db_path: D,
+        cache_path: E,
+        width: usize,
+    ) -> Result<Self, Error> {
+        let max_idx = 0;
         let height = width as f64;
         let height = height.log(MERKLE_ARITY as f64) as usize;
 
         let mut empty_intervals = Vec::new();
 
         let db = DB::open_default(db_path).map_err(|e| Error::Other(e.to_string()))?;
-        let cache = create_cache()?;
+        let db = Arc::new(db);
+
+        let cache = DB::open_default(cache_path).map_err(|e| Error::Other(e.to_string()))?;
+        let cache = Arc::new(cache);
 
         // The initial empty interval is the whole input set. Therefore, the relative range for the
         // root node.
         empty_intervals.push(MerkleRange::new(height, 0, 0));
 
         Ok(BigMerkleTree {
-            modified,
+            max_idx,
             db,
             cache,
             empty_intervals,
             width,
             height,
-            phantom: PhantomData,
         })
     }
 
     /// Return a reference to the internal path of the DB
-    pub fn path(&self) -> &Path {
+    pub fn db_path(&self) -> &Path {
         self.db.path()
     }
 
@@ -85,6 +100,22 @@ impl<'a, T: PoseidonLeaf> BigMerkleTree<'a, T> {
         self.width
     }
 
+    /// Divide the tree into a parallelizable path to the root
+    pub fn segments(&self) -> Vec<MerkleCoord> {
+        let mut coords = vec![];
+        let mut coord = MerkleCoord::new(self.height, self.max_idx);
+
+        while coord.height > 0 {
+            coord.descend(CACHE_HEIGHT_INTERVAL);
+
+            for i in 0..coord.idx + 1 {
+                coords.push(MerkleCoord::new(coord.height, i));
+            }
+        }
+
+        coords
+    }
+
     /// Check if the node in the provided height and index belongs to an empty super tree.
     pub fn node_is_empty(&self, height: usize, idx: usize) -> bool {
         let r = MerkleRange::new(self.height, height, idx);
@@ -92,12 +123,17 @@ impl<'a, T: PoseidonLeaf> BigMerkleTree<'a, T> {
     }
 
     /// Insert the provided leaf on the provided index
-    pub fn insert(&mut self, idx: usize, leaf: T) -> Result<(), Error> {
+    pub fn insert<T: PoseidonLeaf>(&mut self, idx: usize, leaf: T) -> Result<(), Error> {
         self.insert_height(self.height, idx, leaf)
     }
 
     /// Insert the provided leaf on the provided index
-    fn insert_height(&mut self, height: usize, idx: usize, leaf: T) -> Result<(), Error> {
+    fn insert_height<T: PoseidonLeaf>(
+        &mut self,
+        height: usize,
+        idx: usize,
+        leaf: T,
+    ) -> Result<(), Error> {
         let coord = MerkleCoord::new(height, idx);
 
         if height == self.height {
@@ -113,6 +149,8 @@ impl<'a, T: PoseidonLeaf> BigMerkleTree<'a, T> {
     ///
     /// This will reorganize the empty intervals.
     pub fn inserted(&mut self, idx: usize) -> Result<(), Error> {
+        self.max_idx = cmp::max(self.max_idx, idx);
+
         // Should split the empty interval only if the current idx belongs to an empty base
         if self.node_is_empty(self.height, idx) {
             // The range for the current idx is always itself + 1, since its possible to insert
@@ -153,9 +191,7 @@ impl<'a, T: PoseidonLeaf> BigMerkleTree<'a, T> {
             }
         }
 
-        self.modified = true;
-
-        Ok(())
+        self.modified(idx)
     }
 
     /// Set the provided leaf index as absent for the hash calculation.
@@ -251,37 +287,31 @@ impl<'a, T: PoseidonLeaf> BigMerkleTree<'a, T> {
             self.empty_intervals.push((idx..idx + 1).into());
         }
 
-        self.modified = true;
-
-        Ok(())
+        self.modified(idx)
     }
 
-    /// Clear the DB cache
-    pub fn clear_cache(&mut self, destroy_cache: bool) -> Result<(), Error> {
-        if destroy_cache {
-            DB::destroy(&Options::default(), &self.cache.path())
+    /// Flag the base idx as modified, and delete all sub-trees from the cache
+    fn modified(&mut self, idx: usize) -> Result<(), Error> {
+        let mut coord = MerkleCoord::new(self.height, idx);
+
+        loop {
+            coord.descend(1);
+
+            let c: Vec<u8> = coord.try_into()?;
+            self.cache
+                .delete(c.as_slice())
                 .map_err(|e| Error::Other(e.to_string()))?;
+
+            if coord.height == 0 {
+                break;
+            }
         }
 
-        self.cache = create_cache()?;
         Ok(())
     }
 
     /// Fetch a node of the tree for the provided coordinates
-    pub fn node(&mut self, height: usize, idx: usize) -> Result<Option<T>, Error>
-    where
-        Scalar: ops::Mul<T, Output = T>,
-    {
-        if self.modified {
-            self.clear_cache(false)?;
-            self.modified = false;
-        }
-
-        let n = self._node(height, idx)?;
-        Ok(n)
-    }
-
-    fn _node(&mut self, height: usize, idx: usize) -> Result<Option<T>, Error>
+    pub fn node<T: PoseidonLeaf>(&mut self, height: usize, idx: usize) -> Result<Option<T>, Error>
     where
         Scalar: ops::Mul<T, Output = T>,
     {
@@ -298,40 +328,39 @@ impl<'a, T: PoseidonLeaf> BigMerkleTree<'a, T> {
             }
         } else {
             // Calculate the node
-            self.non_base_node(height, idx)
-        }
-    }
+            let coord = MerkleCoord::new(height, idx);
+            let should_cache = (height % CACHE_HEIGHT_INTERVAL) == 0;
 
-    /// Retrieve the node for a non-null subtree and non-base (assumes height - 1 is a valid
-    /// height)
-    fn non_base_node(&mut self, height: usize, idx: usize) -> Result<Option<T>, Error>
-    where
-        Scalar: ops::Mul<T, Output = T>,
-    {
-        let coord = MerkleCoord::new(height, idx);
+            let node = if should_cache {
+                coord.fetch_leaf::<T>(&self.cache)?
+            } else {
+                None
+            };
 
-        match coord.fetch_leaf(&self.db)? {
-            Some(n) => Ok(Some(n)),
-            None => {
-                let mut h = Poseidon::default();
-
-                let needle = idx * MERKLE_ARITY;
-                for i in 0..MERKLE_ARITY {
-                    if let Some(n) = self.node(height + 1, needle + i)? {
-                        h.insert_unchecked(i, n);
-                    }
-                }
-
-                let n = h.hash();
-                coord.persist_leaf(&self.cache, n)?;
-
-                Ok(Some(n))
+            if node.is_some() {
+                return Ok(node);
             }
+
+            let mut h = Poseidon::default();
+
+            let needle = idx * MERKLE_ARITY;
+            for i in 0..MERKLE_ARITY {
+                if let Some(n) = self.node(height + 1, needle + i)? {
+                    h.insert_unchecked(i, n);
+                }
+            }
+
+            let node = h.hash();
+            if should_cache {
+                coord.persist_leaf(&self.cache, node)?;
+            }
+
+            Ok(Some(node))
         }
     }
 
     /// Generate a proof of membership for the provided leaf index
-    pub fn proof(&mut self, mut needle: usize) -> Result<BigProof<T>, Error>
+    pub fn proof<T: PoseidonLeaf>(&mut self, mut needle: usize) -> Result<BigProof<T>, Error>
     where
         Scalar: ops::Mul<T, Output = T>,
     {
@@ -354,10 +383,42 @@ impl<'a, T: PoseidonLeaf> BigMerkleTree<'a, T> {
     }
 
     /// Calculate and return the root of the merkle tree.
-    pub fn root(&mut self) -> Result<T, Error>
+    pub fn root<T: PoseidonLeaf>(&mut self) -> Result<T, Error>
     where
         Scalar: ops::Mul<T, Output = T>,
     {
+        let (tx, rx) = mpsc::channel();
+        let rx = Mutex::new(rx);
+        let rx = Arc::new(rx);
+
+        let mut handles: Vec<thread::JoinHandle<Result<(), Error>>> = vec![];
+
+        let segments = self.segments();
+        for s in segments {
+            tx.send(s).map_err(|e| Error::Other(e.to_string()))?;
+        }
+
+        for _ in 0..num_cpus::get() {
+            let worker = Arc::clone(&rx);
+            let mut tree = self.clone();
+
+            handles.push(thread::spawn(move || {
+                while let Some(c) = worker
+                    .lock()
+                    .map(|r| r.recv().ok())
+                    .map_err(|e| Error::Other(e.to_string()))?
+                {
+                    tree.node(c.height, c.idx)?;
+                }
+
+                Ok(())
+            }));
+        }
+
+        for h in handles {
+            h.join().unwrap().unwrap();
+        }
+
         self.node(0, 0).and_then(|n| {
             n.ok_or(Error::Other(
                 "It was not possible to obtain the root node from the merkle tree.".to_owned(),
@@ -367,12 +428,17 @@ impl<'a, T: PoseidonLeaf> BigMerkleTree<'a, T> {
 }
 
 #[cfg(test)]
-pub fn big_merkle_default(path: &str) -> BigMerkleTree<Scalar> {
+pub fn big_merkle_default(path: &str) -> BigMerkleTree {
     // 2^34
     let width = 17179869184;
     let db_path = TempDir::new(path).map(|t| t.into_path()).unwrap();
 
-    BigMerkleTree::new(db_path, width).unwrap()
+    let cache_path = format!("{}-cache", path);
+    let cache_path = TempDir::new(cache_path.as_str())
+        .map(|t| t.into_path())
+        .unwrap();
+
+    BigMerkleTree::new(db_path, cache_path, width).unwrap()
 }
 
 #[cfg(test)]

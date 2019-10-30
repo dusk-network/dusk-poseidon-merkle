@@ -34,14 +34,15 @@ fn bench_big_merkle(c: &mut Criterion) {
     let iter = vec![10, 1000];
     for x in iter {
         let path = format!("big_merkle_{}", x);
-        let desc = format!("Proof with width {}, arity {}, elements {}", WIDTH, MERKLE_ARITY, x);
+        let desc = format!(
+            "Proof with width {}, arity {}, elements {}",
+            WIDTH, MERKLE_ARITY, x
+        );
         let mut tree: BigMerkleTree<Scalar> = BigMerkleTree::new(path.as_str(), WIDTH).unwrap();
         for i in 0..10 {
             tree.insert(i, Scalar::from(i as u64)).unwrap();
         }
-        group.bench_function(desc.as_str(), move |b| {
-            b.iter(|| proof(&mut tree))
-        });
+        group.bench_function(desc.as_str(), move |b| b.iter(|| proof(&mut tree)));
     }
 
     group.finish();

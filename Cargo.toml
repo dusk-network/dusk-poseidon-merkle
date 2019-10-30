@@ -6,14 +6,14 @@ edition = "2018"
 build = "build.rs"
 
 [features]
-big-merkle = ["rocksdb", "bincode", "serde", "tempdir"]
+big-merkle = ["rocksdb", "bincode", "serde", "num_cpus"]
 
 [dependencies]
 lazy_static = "1.4.0"
 rocksdb = { version = "0.12", optional = true }
 bincode = { version = "1.2", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
-tempdir = { version = "0.3", optional = true }
+num_cpus = { version = "1.10", optional = true }
 
 [dependencies.curve25519-dalek]
 branch = "feature/compressed-try-from"
@@ -24,6 +24,7 @@ features = ["serde"]
 criterion = "0.3"
 rand = "0.7.0"
 sha2 = "0.8"
+tempdir = "0.3"
 
 [build-dependencies.curve25519-dalek]
 branch = "feature/compressed-try-from"
