@@ -16,7 +16,9 @@ inttest: ## Run integration test
 test: ## Run unittests
 	@cargo +nightly check && \
 		cargo +beta fmt --all -- --check && \
-		cargo +nightly test
+		cargo +nightly test && \
+		cargo +nightly test --all-features && \
+		cargo +nightly test --features big-merkle
 clean: ## Remove previous build
 	@cargo +nightly clean
 build: ## Build with debug symbols

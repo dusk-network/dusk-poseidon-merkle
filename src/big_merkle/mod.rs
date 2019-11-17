@@ -335,7 +335,7 @@ impl BigMerkleTree {
     where
         Scalar: ops::Mul<T, Output = T>,
     {
-        let mut proof = BigProof::new();
+        let mut proof = BigProof::default();
         let mut leaves = [None; MERKLE_ARITY];
 
         for row in 0..self.height {

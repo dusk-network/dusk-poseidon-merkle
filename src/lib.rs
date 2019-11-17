@@ -9,6 +9,8 @@ use lazy_static::*;
 use serde::{Deserialize, Serialize};
 
 pub use crate::poseidon::Poseidon;
+#[cfg(feature = "big-merkle")]
+pub use curve25519_dalek::ristretto::CompressedRistretto;
 pub use curve25519_dalek::scalar::Scalar;
 pub use error::Error;
 pub use merkle::MerkleTree;
@@ -16,6 +18,9 @@ pub use proof::Proof;
 
 #[cfg(feature = "big-merkle")]
 pub use big_merkle::{BigMerkleTree, BigProof, MerkleCoord, MerkleRange};
+
+#[cfg(feature = "big-merkle")]
+pub use bulletproofs::r1cs::R1CSProof;
 
 mod error;
 mod merkle;
@@ -47,7 +52,7 @@ pub trait PoseidonLeaf:
     Copy
     + From<u64>
     + From<Scalar>
-    + From<[u8; 32]>
+    + Into<Scalar>
     + PartialEq
     + ops::MulAssign
     + ops::AddAssign
