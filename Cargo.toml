@@ -6,7 +6,12 @@ edition = "2018"
 build = "build.rs"
 
 [features]
+default = []
 big-merkle = ["rocksdb", "bincode", "serde", "num_cpus"]
+input-width-2 = []
+input-width-4 = []
+input-width-8 = []
+merkle-width-64 = []
 
 [dependencies]
 lazy_static = "1.4.0"

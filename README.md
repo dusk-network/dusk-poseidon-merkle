@@ -8,27 +8,6 @@ Reference implementation for the Poseidon Merkle function.
 
 The `Poseidon` structure will accept a number of inputs equal to the arity of the tree.
 
-## Build
-
-A few environment variables will be read in the build process.
-
-* `POSEIDON_MERKLE_ARITY`
-
-    Represents the arity of the merkle tree. This is also the maximum number of elements the poseidon hash will accept. Defaults to `4`.
-
-
-* `POSEIDON_MERKLE_WIDTH`
-
-    Represents the merkle tree width. Defaults to `64`.
-
-* `POSEIDON_FULL_ROUNDS`
-
-    Represents the number of full rounds performed during the permutation. Defaults to `8`.
-
-* `POSEIDON_PARTIAL_ROUNDS`
-
-    Represents the number of partial rounds performed during the permutation. Defaults to `59`.
-
 ## Example
 
 ```rust

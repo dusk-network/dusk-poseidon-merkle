@@ -41,21 +41,10 @@ fn main() {
     let dest_path = Path::new(&out_dir).join("src").join("constants.rs");
     let mut f = File::create(&dest_path).expect("Could not create file");
 
-    let merkle_arity = env::var("POSEIDON_MERKLE_ARITY")
-        .map(|s| s.parse().expect("Failed to parse POSEIDON_MERKLE_ARITY"))
-        .unwrap_or(4);
-
-    let merkle_width = env::var("POSEIDON_MERKLE_WIDTH")
-        .map(|s| s.parse().expect("Failed to parse POSEIDON_MERKLE_WIDTH"))
-        .unwrap_or(64);
-
-    let full_rounds = env::var("POSEIDON_FULL_ROUNDS")
-        .map(|s| s.parse().expect("Failed to parse POSEIDON_FULL_ROUNDS"))
-        .unwrap_or(8);
-
-    let partial_rounds = env::var("POSEIDON_PARTIAL_ROUNDS")
-        .map(|s| s.parse().expect("Failed to parse POSEIDON_PARTIAL_ROUNDS"))
-        .unwrap_or(59);
+    let merkle_arity = get_width();
+    let merkle_width = get_merkle_width();
+    let full_rounds = 8;
+    let partial_rounds = 59;
 
     let width = merkle_arity + 1;
     let merkle_height = merkle_width as f64;
@@ -92,4 +81,48 @@ pub(crate) const MERKLE_HEIGHT: usize = {};
 
     f.write_all(mds.as_slice())
         .expect("Failed to write MDS matrix bin file.");
+}
+
+fn get_width() -> usize {
+    #[cfg(any(
+        feature = "input-width-2",
+        feature = "input-width-4",
+        feature = "input-width-8"
+    ))]
+    {
+        #[cfg(feature = "input-width-2")]
+        {
+            2
+        }
+        #[cfg(feature = "input-width-4")]
+        {
+            4
+        }
+        #[cfg(feature = "input-width-8")]
+        {
+            8
+        }
+    }
+    #[cfg(not(any(
+        feature = "input-width-2",
+        feature = "input-width-4",
+        feature = "input-width-8"
+    )))]
+    {
+        4
+    }
+}
+
+fn get_merkle_width() -> usize {
+    #[cfg(any(feature = "merkle-width-64"))]
+    {
+        #[cfg(feature = "merkle-width-64")]
+        {
+            64
+        }
+    }
+    #[cfg(not(any(feature = "merkle-width-64")))]
+    {
+        64
+    }
 }

@@ -14,12 +14,12 @@ matrix:
           # Send a notification to the Dusk build Status Telegram channel once the CI build completes
         - bash <(curl -s https://raw.githubusercontent.com/dusk-network/tools/master/bash/telegram_ci_notifications.sh)
 
-before_install:
-  - sudo apt-get update
-
 before_script:
-  - make dep
+  - rustup toolchain install beta
+  - rustup toolchain install nightly
+  - rustup component add rustfmt --toolchain=beta
 
 script:
-  - make test
-  - make inttest
+  - make testfmt CARGO_OPTIONS=+beta
+  - make test CARGO_OPTIONS=+nightly
+  - make inttest CARGO_OPTIONS=+nightly

@@ -1,37 +1,28 @@
+CARGO_OPTIONS?=+nightly
 RS_FILES := $(shell find . -name '*.rs')
-.PHONY: all dep lintdep lint fmt inttest test clean build release bench publishdoc
-all: test inttest build release ## Main sequence
-dep: ## Install the dependencies
-	@rustup toolchain install beta
-	@rustup toolchain install nightly
-	@rustup component add rustfmt --toolchain=beta
-lintdep: dep ## Install the lint deps
-	@rustup component add clippy --toolchain=nightly
-lint: ## Perform the clippy lints
-	@cargo +nightly clippy
+.PHONY: all fmt inttest testfmt test clean build release bench publishdoc
+all: testfmt test inttest build release ## Main sequence
 fmt: ## Format the go files
-	@cargo +beta fmt -- ${RS_FILES}
+	@cargo ${CARGO_OPTIONS} fmt -- ${RS_FILES}
 inttest: ## Run integration test
-	@cargo +nightly test --release -- --ignored --test-threads=1
+	@cargo ${CARGO_OPTIONS} test --release -- --ignored --test-threads=1
+testfmt: ## Validate the format
+	@cargo ${CARGO_OPTIONS} fmt --all -- --check
 test: ## Run unittests
-	@cargo +nightly check && \
-		cargo +beta fmt --all -- --check && \
-		cargo +nightly test
+	@cargo ${CARGO_OPTIONS} check && \
+		cargo ${CARGO_OPTIONS} test
 clean: ## Remove previous build
-	@cargo +nightly clean
+	@cargo ${CARGO_OPTIONS} clean
 build: ## Build with debug symbols
-	@cargo +nightly build
+	@cargo ${CARGO_OPTIONS} build
 release: ## Build with optimization and without debug symbols
-	@cargo +nightly build --release
-bench: dep ## Perform the benchmark tests
+	@cargo ${CARGO_OPTIONS} build --release
+bench: ## Perform the benchmark tests
 	@for a in 2 4 8 ; \
-		do export POSEIDON_MERKLE_ARITY=$$a ; \
-		export POSEIDON_MERKLE_WIDTH=64 ; \
-		echo "POSEIDON_MERKLE_ARITY" $$POSEIDON_MERKLE_ARITY "POSEIDON_MERKLE_WIDTH" $$POSEIDON_MERKLE_WIDTH ; \
-		cargo +nightly bench ; \
+		cargo ${CARGO_OPTIONS} bench --features input-width-$$a ; \
 		done
 publishdoc: ## Generate and publish git pages docs
-	@cargo +nightly doc && \
+	@cargo ${CARGO_OPTIONS} doc && \
 		echo "<meta http-equiv=refresh content=0;url=/dusk-poseidon-merkle/dusk_poseidon_merkle/index.html>" > target/doc/index.html && \
 		curl -o 'target/doc/badge.svg' 'https://img.shields.io/badge/docs-latest-blue?logo=rust' && \
 		curl -o 'target/doc/repo-badge.svg' 'https://img.shields.io/badge/github-dusk--poseidon-brightgreen?logo=github' && \
